@@ -1,0 +1,2 @@
+[workspace]
+members=["account_proof_geyser","client"]

@@ -30,4 +30,3 @@ tokio = { version = "1.32.0", features = ["rt-multi-thread", "macros", "time"] }
 log = { version = "0.4.14", features = ["std"] }
 account_proof_geyser = { path = "../account_proof_geyser"}
 
-[workspace]
