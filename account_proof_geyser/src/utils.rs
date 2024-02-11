@@ -3,13 +3,11 @@ use std::collections::HashMap;
 use blake3::traits::digest::Digest;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rayon::prelude::*;
-use solana_runtime::accounts_hash::{AccountsHasher, MERKLE_FANOUT};
-use solana_sdk::hash::{Hash, Hasher, hashv};
+use solana_accounts_db::accounts_hash::{AccountHash, AccountsHasher, MERKLE_FANOUT};
+use solana_sdk::hash::{hashv, Hash, Hasher};
 use solana_sdk::pubkey::Pubkey;
 
 use crate::types::{AccountDeltaProof, AccountHashMap, Data, Proof};
-
-
 
 /// Util helper function to calculate the hash of a solana account
 /// https://github.com/solana-labs/solana/blob/v1.16.15/runtime/src/accounts_db.rs#L6076-L6118
@@ -46,6 +44,10 @@ pub fn hash_solana_account(
 
 // Simple wrapper around the solana function
 pub fn calculate_root(pubkey_hash_vec: Vec<(Pubkey, Hash)>) -> Hash {
+    let pubkey_hash_vec = pubkey_hash_vec
+        .into_iter()
+        .map(|item| (item.0, AccountHash(item.1)))
+        .collect();
     AccountsHasher::accumulate_account_hashes(pubkey_hash_vec)
 }
 
@@ -323,41 +325,51 @@ pub fn assemble_account_delta_inclusion_proof(
             hash: account_data_hashes.get(&incl).unwrap().1,
             account: account_data_hashes.get(&incl).unwrap().2.clone(),
         };
-        let account_proof = AccountDeltaProof(incl.clone(), (data, account_proofs_map.get(&incl).unwrap().clone()));
+        let account_proof = AccountDeltaProof(
+            incl.clone(),
+            (data, account_proofs_map.get(&incl).unwrap().clone()),
+        );
         proofs.push(account_proof)
     }
 
     Ok(proofs)
 }
 
-pub fn verify_leaves_against_bankhash(account_proof: &AccountDeltaProof,
-                                      bankhash: Hash,
-                                      num_sigs: u64,
-                                      account_delta_root: Hash,
-                                      parent_bankhash: Hash,
-                                      blockhash: Hash) -> anyhow::Result<()> {
+pub fn verify_leaves_against_bankhash(
+    account_proof: &AccountDeltaProof,
+    bankhash: Hash,
+    num_sigs: u64,
+    account_delta_root: Hash,
+    parent_bankhash: Hash,
+    blockhash: Hash,
+) -> anyhow::Result<()> {
     let pubkey = account_proof.0;
-    let data = &account_proof.1.0;
-    let proof = &account_proof.1.1;
+    let data = &account_proof.1 .0;
+    let proof = &account_proof.1 .1;
 
     if data.account.pubkey != pubkey {
         anyhow::bail!("account info pubkey doesn't match pubkey in provided update");
     }
-    if data.hash.as_ref() != hash_solana_account(
-        data.account.lamports,
-        data.account.owner.as_ref(),
-        data.account.executable,
-        data.account.rent_epoch,
-        &data.account.data,
-        data.account.pubkey.as_ref()) {
+    if data.hash.as_ref()
+        != hash_solana_account(
+            data.account.lamports,
+            data.account.owner.as_ref(),
+            data.account.executable,
+            data.account.rent_epoch,
+            &data.account.data,
+            data.account.pubkey.as_ref(),
+        )
+    {
         anyhow::bail!("account data does not match account hash");
     }
-    if bankhash != hashv(&[
-        parent_bankhash.as_ref(),
-        account_delta_root.as_ref(),
-        &num_sigs.to_le_bytes(),
-        blockhash.as_ref(),
-    ]) {
+    if bankhash
+        != hashv(&[
+            parent_bankhash.as_ref(),
+            account_delta_root.as_ref(),
+            &num_sigs.to_le_bytes(),
+            blockhash.as_ref(),
+        ])
+    {
         anyhow::bail!("bank hash does not match data");
     }
     if !verify_proof(&data.hash, &proof, &account_delta_root) {

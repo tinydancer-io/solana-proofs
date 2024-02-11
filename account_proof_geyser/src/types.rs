@@ -3,15 +3,15 @@ use std::collections::HashMap;
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_geyser_plugin_interface::geyser_plugin_interface::{ReplicaBlockInfoV2, SlotStatus};
 use solana_sdk::hash::Hash;
+use solana_sdk::message::legacy::Message;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signature;
-use solana_sdk::message::legacy::Message;
 
 pub type AccountHashAccumulator = HashMap<u64, AccountHashMap>;
 pub type TransactionSigAccumulator = HashMap<u64, u64>;
 pub type SlotHashProofAccumulator = HashMap<u64, (Hash, BankHashProof)>;
 pub type VoteAccumulator = HashMap<u64, VoteHashMap>;
-pub type VoteHashMap = HashMap<Signature,VoteInfo>;
+pub type VoteHashMap = HashMap<Signature, VoteInfo>;
 pub type AccountHashMap = HashMap<Pubkey, (u64, Hash, AccountInfo)>;
 
 #[derive(Clone, Debug, BorshSerialize, BorshDeserialize)]
@@ -25,7 +25,7 @@ pub struct BankHashComponents {
     parent_bankhash: Hash,
     accounts_delta_hash: Hash,
     num_sigs: u64,
-    current_blockhash: Hash
+    current_blockhash: Hash,
 }
 
 #[derive(Clone, Debug, BorshSerialize, BorshDeserialize)]
@@ -106,14 +106,13 @@ pub struct TransactionInfo {
     pub num_sigs: u64,
 }
 
-
 #[derive(Debug, Clone)]
 pub struct VoteInfo {
     pub slot: u64,
     pub signature: Signature,
     pub vote_for_slot: u64,
     pub vote_for_hash: Hash,
-    pub message: Message
+    pub message: Message,
 }
 
 #[derive(Debug, Clone)]
@@ -147,5 +146,5 @@ pub enum GeyserMessage {
     BlockMessage(BlockInfo),
     TransactionMessage(TransactionInfo),
     SlotMessage(SlotInfo),
-    VoteMessage(VoteInfo)
+    VoteMessage(VoteInfo),
 }

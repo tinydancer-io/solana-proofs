@@ -18,20 +18,20 @@ use solana_geyser_plugin_interface::geyser_plugin_interface::{
 use solana_sdk::clock::Slot;
 use solana_sdk::hash::{hashv, Hash};
 use solana_sdk::pubkey::Pubkey;
-use solana_sdk::vote::instruction::VoteInstruction;
 use solana_sdk::sysvar::slot_hashes::SlotHashes;
+use solana_sdk::vote::instruction::VoteInstruction;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpListener;
 use tokio::sync::broadcast;
 
 use crate::config::Config;
 use crate::types::{
-    AccountHashAccumulator, AccountInfo, BankHashProof, BlockInfo, GeyserMessage, SlotInfo,
-    TransactionInfo, TransactionSigAccumulator, VoteAccumulator, Update, VoteInfo, SlotHashProofAccumulator
+    AccountHashAccumulator, AccountInfo, BankHashProof, BlockInfo, GeyserMessage,
+    SlotHashProofAccumulator, SlotInfo, TransactionInfo, TransactionSigAccumulator, Update,
+    VoteAccumulator, VoteInfo,
 };
 use crate::utils::{
-    assemble_account_delta_inclusion_proof, calculate_root_and_proofs,
-    hash_solana_account,
+    assemble_account_delta_inclusion_proof, calculate_root_and_proofs, hash_solana_account,
 };
 
 pub const SLOT_HASH_ACCOUNT: &str = "SysvarS1otHashes111111111111111111111111111";
@@ -65,17 +65,21 @@ fn handle_confirmed_slot(
     // Store SlotHash proofs for every Confirmed Slot
 
     let slothash_pubkey = Pubkey::from_str(&SLOT_HASH_ACCOUNT).unwrap();
-    let slothash_account_data = account_hashes_data.get(&slothash_pubkey).unwrap().2.data.clone();
+    let slothash_account_data = account_hashes_data
+        .get(&slothash_pubkey)
+        .unwrap()
+        .2
+        .data
+        .clone();
     let slothashes: SlotHashes = bincode::deserialize(&slothash_account_data).unwrap();
     filtered_pubkeys.push(slothash_pubkey);
-
 
     // This doesn't need to exist because slothashes will always be part of the account_delta_hash
     if filtered_pubkeys.len() == 0 {
         block_accumulator.remove(&slot);
         processed_slot_account_accumulator.remove(&slot);
         processed_transaction_accumulator.remove(&slot);
-        anyhow::bail!("monitored account not modified for slot: {}",&slot);
+        anyhow::bail!("monitored account not modified for slot: {}", &slot);
     }
 
     // Extract necessary information for calculating Bankhash
@@ -86,7 +90,6 @@ fn handle_confirmed_slot(
         .iter()
         .map(|(k, (_, v, _))| (k.clone(), v.clone()))
         .collect();
-
 
     // Calculate Account Delta Hash (Merkle Root) and Merkle proofs for pubkeys
     let (accounts_delta_hash, account_proofs) =
@@ -125,7 +128,6 @@ fn handle_confirmed_slot(
     })
 }
 
-
 fn handle_processed_slot(
     slot: u64,
     raw_slot_account_accumulator: &mut AccountHashAccumulator,
@@ -145,11 +147,7 @@ fn handle_processed_slot(
         raw_transaction_accumulator,
         processed_transaction_accumulator,
     );
-    transfer_slot(
-        slot,
-        raw_vote_accumulator,
-        processed_vote_accumulator,
-    );
+    transfer_slot(slot, raw_vote_accumulator, processed_vote_accumulator);
     Ok(())
 }
 
@@ -175,7 +173,7 @@ fn process_messages(
 
     let mut slothash_accumulator: SlotHashProofAccumulator = HashMap::new();
 
-    let mut pending_updates: HashMap<Hash,Update> = HashMap::new();
+    let mut pending_updates: HashMap<Hash, Update> = HashMap::new();
 
     let mut block_accumulator: HashMap<u64, BlockInfo> = HashMap::new();
     loop {
@@ -216,7 +214,8 @@ fn process_messages(
             Ok(GeyserMessage::VoteMessage(vote_info)) => {
                 let slot_num = vote_info.slot;
                 let sig = vote_info.signature;
-                raw_vote_accumulator.entry(slot_num)
+                raw_vote_accumulator
+                    .entry(slot_num)
                     .or_insert(HashMap::new())
                     .insert(sig.clone(), vote_info);
             }
@@ -333,10 +332,12 @@ impl GeyserPlugin for Plugin {
         "AccountProofGeyserPlugin"
     }
 
-    fn on_load(&mut self, config_file: &str) -> PluginResult<()> {
+    fn on_load(&mut self, config_file: &str, is_reload: bool) -> PluginResult<()> {
+        solana_logger::setup_with_default("info");
+        println!("Loading Geyser");
         let config = Config::load_from_file(config_file)
             .map_err(|e| GeyserPluginError::ConfigFileReadError { msg: e.to_string() })?;
-        solana_logger::setup_with_default("error");
+        println!("Config loaded for geyser plugin");
         let (geyser_sender, geyser_receiver) = unbounded();
         let pubkeys_for_proofs: Vec<Pubkey> = config
             .account_list
@@ -368,7 +369,7 @@ impl GeyserPlugin for Plugin {
                         loop {
                             match rx.recv().await {
                                 Ok(update) => {
-                                    let data = update.try_to_vec().unwrap();
+                                    let data = borsh::to_vec(&update).unwrap();
                                     let _ = socket.write_all(&data).await;
                                 }
                                 Err(_) => {}
@@ -468,18 +469,20 @@ impl GeyserPlugin for Plugin {
             };
 
             if transaction.transaction.is_simple_vote_transaction() {
-                match transaction
-                    .transaction
-                    .message() {
+                match transaction.transaction.message() {
                     solana_sdk::message::SanitizedMessage::Legacy(legacy_message) => {
-                        let vote_instruction: VoteInstruction = bincode::deserialize(&legacy_message.message.instructions[0].data).unwrap();
+                        let vote_instruction: VoteInstruction =
+                            bincode::deserialize(&legacy_message.message.instructions[0].data)
+                                .unwrap();
                         let sig = transaction.transaction.signatures()[0];
                         match vote_instruction {
                             VoteInstruction::CompactUpdateVoteState(state_update) => {
                                 let vote_message = GeyserMessage::VoteMessage(VoteInfo {
                                     slot,
                                     signature: sig,
-                                    vote_for_slot: state_update.lockouts[state_update.lockouts.len()-1].slot(),
+                                    vote_for_slot: state_update.lockouts
+                                        [state_update.lockouts.len() - 1]
+                                        .slot(),
                                     vote_for_hash: state_update.hash,
                                     message: legacy_message.message.clone().into_owned(),
                                 });
@@ -487,11 +490,9 @@ impl GeyserPlugin for Plugin {
                             }
                             _ => {}
                         }
-
-                    },
+                    }
                     _ => {}
                 }
-
             }
             let message = GeyserMessage::TransactionMessage(TransactionInfo {
                 slot,

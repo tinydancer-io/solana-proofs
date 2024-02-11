@@ -1,2 +1,2 @@
 [workspace]
-members=["account_proof_geyser","client"]
+members=["account_proof_geyser",]
