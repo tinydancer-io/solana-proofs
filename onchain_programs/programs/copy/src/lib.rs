@@ -1,7 +1,10 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::keccak::{hashv, Hash};
 
-declare_id!("97rYcJXAFPCGZCecRktMg9GueXsdgU55V8FsdxUiDZrc");
+// declare_id!("97rYcJXAFPCGZCecRktMg9GueXsdgU55V8FsdxUiDZrc");
+
+//testnet program ID
+declare_id!("BgaRwBpqNYbK8WSR4x1rtZn7LMhuwpHqF3nCoFtSjZjg");
 
 pub const PREFIX: &str = "copy_hash";
 

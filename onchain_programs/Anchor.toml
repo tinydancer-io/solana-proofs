@@ -10,8 +10,8 @@ copy = "Fx9d54Cy4RAwYmwgiZf8gDaaUGkFS65diagDX2vvMRqc"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
-wallet = "/Users/dubbelosix/.config/solana/id.json"
+cluster = "TestNet"
+wallet = "/root/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
