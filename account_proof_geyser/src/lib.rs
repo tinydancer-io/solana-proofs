@@ -10,7 +10,7 @@ use std::thread;
 
 use borsh::BorshSerialize;
 use crossbeam_channel::{unbounded, Sender};
-use log::error;
+use log::{error, warn};
 use solana_geyser_plugin_interface::geyser_plugin_interface::{
     GeyserPlugin, GeyserPluginError, ReplicaAccountInfoVersions, ReplicaBlockInfoVersions,
     ReplicaEntryInfoVersions, ReplicaTransactionInfoVersions, Result as PluginResult, SlotStatus,
@@ -509,14 +509,27 @@ impl GeyserPlugin for Plugin {
 
     fn notify_block_metadata(&self, blockinfo: ReplicaBlockInfoVersions<'_>) -> PluginResult<()> {
         self.with_inner(|inner| {
-            let blockinfo = match blockinfo {
-                ReplicaBlockInfoVersions::V0_0_2(info) => info,
-                _ => {
-                    unreachable!("Only ReplicaBlockInfoVersions::V0_0_1 is supported")
+            match blockinfo {
+                // ReplicaBlockInfoVersions::V0_0_1(info) => info,
+                ReplicaBlockInfoVersions::V0_0_2(info) => {
+                    let message = GeyserMessage::BlockMessage((info).into());
+                    inner.send_message(message)
                 }
-            };
-            let message = GeyserMessage::BlockMessage((blockinfo).into());
-            inner.send_message(message);
+                ReplicaBlockInfoVersions::V0_0_1(ref info) => {
+                    unreachable!(
+                        "Only ReplicaBlockInfoVersions::V0_0_2 not 0.0.1 is supported {:?}",
+                        info.slot
+                    )
+                }
+                ReplicaBlockInfoVersions::V0_0_3(info) => {
+                    // unreachable!(
+                    //     "Only ReplicaBlockInfoVersions::V0_0_2 not 0.0.3 is supported {:?}",
+                    //     info.slot
+                    // )
+                    let message = GeyserMessage::BlockMessage((info).into());
+                    inner.send_message(message)
+                }
+            }
 
             Ok(())
         })

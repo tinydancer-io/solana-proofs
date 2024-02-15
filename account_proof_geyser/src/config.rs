@@ -10,7 +10,7 @@ pub struct Config {
     pub libpath: String,
     pub account_list: Vec<String>,
     pub bind_address: SocketAddr,
-    pub vote_accounts: Vec<String>,
+    // pub vote_accounts: Vec<String>,
 }
 
 #[derive(Debug)]

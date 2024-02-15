@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
 use borsh::{BorshDeserialize, BorshSerialize};
-use solana_geyser_plugin_interface::geyser_plugin_interface::{ReplicaBlockInfoV2, SlotStatus};
+use solana_geyser_plugin_interface::geyser_plugin_interface::{
+    ReplicaBlockInfo, ReplicaBlockInfoV2, ReplicaBlockInfoV3, ReplicaTransactionInfo, SlotStatus,
+};
 use solana_sdk::hash::Hash;
 use solana_sdk::message::legacy::Message;
 use solana_sdk::pubkey::Pubkey;
@@ -133,6 +135,28 @@ impl<'a> From<&'a ReplicaBlockInfoV2<'a>> for BlockInfo {
         }
     }
 }
+
+impl<'a> From<&'a ReplicaBlockInfoV3<'a>> for BlockInfo {
+    fn from(block: &'a ReplicaBlockInfoV3<'a>) -> Self {
+        Self {
+            slot: block.slot,
+            parent_bankhash: block.parent_blockhash.to_string(),
+            blockhash: block.blockhash.to_string(),
+            executed_transaction_count: block.executed_transaction_count,
+        }
+    }
+}
+
+// impl<'a> From<&'a ReplicaBlockInfo<'a>> for BlockInfo {
+//     fn from(block: &'a ReplicaBlockInfo<'a>) -> Self {
+//         Self {
+//             slot: block.slot,
+//             parent_bankhash: block.block_height.parent_blockhash.to_string(),
+//             blockhash: block.blockhash.to_string(),
+//             executed_transaction_count: block.executed_transaction_count,
+//         }
+//     }
+// }
 
 #[derive(Debug, Clone)]
 pub struct SlotInfo {
