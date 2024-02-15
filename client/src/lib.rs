@@ -3,7 +3,8 @@ use std::io::{Read, Write};
 use std::path::Path;
 
 use blake3::traits::digest::Digest;
-use solana_runtime::accounts_hash::AccountsHasher;
+use solana_accounts_db::accounts_hash::{AccountHash, AccountsHasher};
+// use solana_runtime::accounts_hash::AccountsHasher;
 use solana_sdk::hash::Hash;
 use solana_sdk::pubkey::Pubkey;
 
@@ -60,5 +61,9 @@ pub fn hash_solana_account(
 }
 
 pub fn calculate_root(pubkey_hash_vec: Vec<(Pubkey, Hash)>) -> Hash {
+    let pubkey_hash_vec = pubkey_hash_vec
+        .into_iter()
+        .map(|item| (item.0, AccountHash(item.1)))
+        .collect();
     AccountsHasher::accumulate_account_hashes(pubkey_hash_vec)
 }

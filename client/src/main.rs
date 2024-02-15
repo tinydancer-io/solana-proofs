@@ -3,30 +3,32 @@ use std::str::FromStr;
 
 use account_proof_geyser::types::Update;
 use account_proof_geyser::utils::verify_leaves_against_bankhash;
-use borsh::BorshDeserialize;
+use borsh::de::BorshDeserialize;
 use tokio::io::AsyncReadExt;
 use tokio::net::TcpStream;
 use tokio::runtime::Runtime;
 
 use anchor_client::{Client, Cluster};
 use anchor_lang::solana_program::sysvar::clock::Clock;
-use anchor_lang::AccountDeserialize;
+// use anchor_lang::AccountDeserialize;
 use clap::Parser;
 use clap::Subcommand;
-use copy::{accounts as copy_accounts, instruction as copy_instruction, PREFIX, CopyAccount, account_hasher};
+use copy::{
+    account_hasher, accounts as copy_accounts, instruction as copy_instruction, CopyAccount, PREFIX,
+};
 use solana_rpc_client::rpc_client::RpcClient;
 use solana_sdk::account::Account;
 use solana_sdk::commitment_config::{CommitmentConfig, CommitmentLevel};
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signature, Signer};
 use solana_sdk::signer::keypair::read_keypair_file;
-use solana_sdk::sysvar::SysvarId;
 use solana_sdk::system_program;
+use solana_sdk::sysvar::SysvarId;
 
 extern crate alloc;
 
-const DEFAULT_RPC_URL: &str = "http://localhost:8899";
-const DEFAULT_WS_URL: &str = "ws://localhost:8900";
+const DEFAULT_RPC_URL: &str = "http://api.testnet.solana.com:8899";
+const DEFAULT_WS_URL: &str = "ws://api.testnet.solana.com:8900";
 
 pub struct CopyClient {
     pub rpc_url: String,
@@ -88,7 +90,6 @@ impl CopyClient {
 struct Cli {
     #[command(subcommand)]
     command: Commands,
-
 }
 
 #[derive(Subcommand)]
@@ -109,22 +110,27 @@ enum Commands {
     },
     CopyPda {
         copy_program: String,
-    }
+    },
 }
 
 fn query_account(addr: &Pubkey) -> Account {
-    let url = "http://localhost:8899".to_string();
+    let url = "http://api.testnet.solana.com".to_string();
     let client = RpcClient::new(url);
     client.get_account(addr).unwrap()
 }
 
-async fn monitor_and_verify_updates(rpc_pubkey: &Pubkey, rpc_account: &Account) -> anyhow::Result<()> {
-    let mut stream = TcpStream::connect("127.0.0.1:10000")
+async fn monitor_and_verify_updates(
+    rpc_pubkey: &Pubkey,
+    rpc_account: &Account,
+) -> anyhow::Result<()> {
+    println!("starting monitor");
+    let mut stream = TcpStream::connect("127.0.0.1:5000")
         .await
-        .expect("unable to connect to 127.0.0.1 on port 10000");
+        .expect("unable to connect to 127.0.0.1 on port 5000");
 
     let mut buffer = vec![0u8; 65536];
-    let n = stream.read(&mut buffer)
+    let n = stream
+        .read(&mut buffer)
         .await
         .expect("unable to read to mutable buffer");
 
@@ -132,27 +138,41 @@ async fn monitor_and_verify_updates(rpc_pubkey: &Pubkey, rpc_account: &Account) 
         anyhow::bail!("Connection closed");
     }
 
-    let received_update: Update = Update::try_from_slice(&buffer[..n]).unwrap();
+    let received_update: Update = BorshDeserialize::try_from_slice(&buffer[..n]).unwrap();
 
     let bankhash = received_update.root;
     let bankhash_proof = received_update.proof;
     let slot_num = received_update.slot;
     for p in bankhash_proof.proofs {
-        verify_leaves_against_bankhash(&p,
-                                       bankhash,
-                                       bankhash_proof.num_sigs,
-                                       bankhash_proof.account_delta_root,
-                                       bankhash_proof.parent_bankhash,
-                                       bankhash_proof.blockhash).unwrap();
+        verify_leaves_against_bankhash(
+            &p,
+            bankhash,
+            bankhash_proof.num_sigs,
+            bankhash_proof.account_delta_root,
+            bankhash_proof.parent_bankhash,
+            bankhash_proof.blockhash,
+        )
+        .unwrap();
 
-        println!("\nBankHash proof verification succeeded for account with Pubkey: {:?} in slot {}", &p.0
-                 ,slot_num);
-        let copy_account = CopyAccount::try_deserialize(&mut p.1.0.account.data.as_slice())?;
-        let rpc_account_hash = account_hasher(&rpc_pubkey, rpc_account.lamports, &rpc_account.data,
-                                              &rpc_account.owner,rpc_account.rent_epoch);
-        assert_eq!(rpc_account_hash.as_ref(),&copy_account.digest);
-        println!("Hash for rpc account matches Hash verified as part of the BankHash: {}",rpc_account_hash);
-        println!("{:?}",&rpc_account);
+        println!(
+            "\nBankHash proof verification succeeded for account with Pubkey: {:?} in slot {}",
+            &p.0, slot_num
+        );
+        let copy_account: CopyAccount =
+            anchor_lang::AccountDeserialize::try_deserialize(&mut p.1 .0.account.data.as_slice())?;
+        let rpc_account_hash = account_hasher(
+            &rpc_pubkey,
+            rpc_account.lamports,
+            &rpc_account.data,
+            &rpc_account.owner,
+            rpc_account.rent_epoch,
+        );
+        assert_eq!(rpc_account_hash.as_ref(), &copy_account.digest);
+        println!(
+            "Hash for rpc account matches Hash verified as part of the BankHash: {}",
+            rpc_account_hash
+        );
+        println!("{:?}", &rpc_account);
     }
     Ok(())
 }
@@ -161,26 +181,41 @@ fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Commands::CopyTransaction {copy_program,account_for_proof, signer, rpc_url, ws_url} => {
-
+        Commands::CopyTransaction {
+            copy_program,
+            account_for_proof,
+            signer,
+            rpc_url,
+            ws_url,
+        } => {
             let account_for_proof = Pubkey::from_str(account_for_proof).unwrap();
             let signer_keypair = read_keypair_file(signer).unwrap();
             let account_state_from_rpc = query_account(&account_for_proof);
 
-            let monitor_handle = std::thread::spawn( move || {
+            let monitor_handle = std::thread::spawn(move || {
                 let rt = Runtime::new().unwrap(); // Create a new Tokio runtime
-                rt.block_on(monitor_and_verify_updates(&account_for_proof, &account_state_from_rpc)).unwrap(); // Run the async function `monitor_updates` to completion
+                rt.block_on(monitor_and_verify_updates(
+                    &account_for_proof,
+                    &account_state_from_rpc,
+                ))
+                .unwrap(); // Run the async function `monitor_updates` to completion
             });
 
-            let copy_client = CopyClient::new(rpc_url.to_string(), ws_url.to_string(), signer_keypair, copy_program);
+            let copy_client = CopyClient::new(
+                rpc_url.to_string(),
+                ws_url.to_string(),
+                signer_keypair,
+                copy_program,
+            );
             copy_client.send_transaction(&account_for_proof).unwrap();
+            println!("sent txn");
             monitor_handle.join().unwrap();
         }
-        Commands::CopyPda {copy_program} => {
+        Commands::CopyPda { copy_program } => {
             let copy_program_pubkey = Pubkey::from_str(copy_program).unwrap();
             let (copy_pda, _) =
                 Pubkey::find_program_address(&[PREFIX.as_bytes()], &copy_program_pubkey);
-            println!("account: {}",copy_pda);
+            println!("account: {}", copy_pda);
         }
     }
 }
