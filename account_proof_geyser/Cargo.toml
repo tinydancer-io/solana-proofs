@@ -7,16 +7,17 @@ edition = "2021"
 crate-type = ["cdylib","rlib"]
 
 [dependencies]
+
 borsh = {version = "1.2.1", features = ["derive"]}
 bincode = "1.3.3"
 serde = { version = "1.0.145", features = ["derive"] }
 serde_json = "1.0.86"
-solana-geyser-plugin-interface = "1.18.1"
-solana-logger = "1.18.1"
-solana-sdk = "1.18.1"
-solana-transaction-status = "1.18.1"
-solana-runtime = "1.18.1"
-solana-accounts-db="1.18.1"
+solana-geyser-plugin-interface = {path="/root/solana-1.18/geyser-plugin-interface"}
+solana-logger = {path="/root/solana-1.18/logger"}
+solana-sdk = {path="/root/solana-1.18/sdk"}
+solana-transaction-status = {path="/root/solana-1.18/transaction-status"}
+solana-runtime = {path="/root/solana-1.18/runtime"}
+solana-accounts-db = {path="/root/solana-1.18/accounts-db"}
 log = "0.4.17"
 crossbeam-channel = "0.5.8"
 crossbeam = "0.8.2"
@@ -25,6 +26,10 @@ rayon = "1.7.0"
 lru = "0.12.0"
 anyhow = "1.0.75"
 tokio = { version = "1", features = ["full"] }
+
+[patch.crates-io]
+solana-program = { path = "/root/solana-1.18/sdk/program" } 
+solana-zk-token-sdk = { path = "/root/solana-1.18/zk-token-sdk" }
 
 [dev-dependencies]
 rand = "0.8.5"
