@@ -6,15 +6,17 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anchor-lang = "0.28.0"
-anchor-client = "0.28.0"
-solana-sdk = "=1.16.15"
-borsh = "0.10.3"
+anchor-lang = {path="/root/anchor/lang"}
+anchor-client = {path="/root/anchor/client"}
+solana-sdk = {path="/root/solana-1.18/sdk"}
+borsh = {version = "1.2.1", features = ["derive"]}
 bs58 = "0.5.0"
 clap = {version="4.4.6", features = ['derive']}
 copy = {path = "../onchain_programs/programs/copy", features = ["no-entrypoint"]}
-solana-runtime = "=1.16.15"
-solana-rpc-client = "=1.16.15"
+
+solana-accounts-db = {path="/root/solana-1.18/accounts-db"}
+solana-runtime = {path="/root/solana-1.18/runtime"}
+solana-rpc-client = {path="/root/solana-1.18/rpc-client"}
 anyhow = "1.0.75"
 rand = "0.8.5"
 lru = "0.12.0"
@@ -28,5 +30,9 @@ crossbeam-channel = "0.5.8"
 backoff = { version = "0.4.0", features = ["tokio"] }
 tokio = { version = "1.32.0", features = ["rt-multi-thread", "macros", "time"] }
 log = { version = "0.4.14", features = ["std"] }
-account_proof_geyser = { path = "../account_proof_geyser"}
+account_proof_geyser = { path = "/root/solana-proofs/account_proof_geyser"}
 
+[patch.crates-io]
+solana-program = { path = "/root/solana-1.18/sdk/program" } 
+solana-zk-token-sdk = { path = "/root/solana-1.18/zk-token-sdk" }
+solana-sdk = { path = "/root/solana-1.18/sdk"}

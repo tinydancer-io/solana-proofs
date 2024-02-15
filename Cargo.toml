@@ -1,2 +1,7 @@
 [workspace]
-members=["account_proof_geyser",]
+members=["account_proof_geyser","client"]
+
+[patch.crates-io]
+solana-program = { path = "/root/solana-1.18/sdk/program" } 
+solana-zk-token-sdk = { path = "/root/solana-1.18/zk-token-sdk" }
+solana-sdk = { path = "/root/solana-1.18/sdk"}
