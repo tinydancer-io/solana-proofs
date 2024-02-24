@@ -127,13 +127,13 @@ async fn monitor_and_verify_updates(
     let mut stream = TcpStream::connect("127.0.0.1:5000")
         .await
         .expect("unable to connect to 127.0.0.1 on port 5000");
-
+    println!("got stream");
     let mut buffer = vec![0u8; 65536];
     let n = stream
         .read(&mut buffer)
         .await
         .expect("unable to read to mutable buffer");
-
+    println!("got object");
     if n == 0 {
         anyhow::bail!("Connection closed");
     }
