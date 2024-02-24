@@ -312,7 +312,7 @@ pub fn get_keys_for_non_inclusion_inner(
 }
 
 pub fn assemble_account_delta_inclusion_proof(
-    account_data_hashes: &AccountHashMap,
+    account_data_hashes: &mut AccountHashMap,
     account_proofs: &[(Pubkey, Proof)],
     inclusion_pubkeys: &[Pubkey],
 ) -> anyhow::Result<Vec<AccountDeltaProof>> {
@@ -322,8 +322,8 @@ pub fn assemble_account_delta_inclusion_proof(
     for incl in inclusion_pubkeys {
         let data = Data {
             pubkey: incl.clone(),
-            hash: account_data_hashes.get(&incl).unwrap().1,
-            account: account_data_hashes.get(&incl).unwrap().2.clone(),
+            hash: account_data_hashes.get_mut(&incl).unwrap().1,
+            account: account_data_hashes.get_mut(&incl).unwrap().2.clone(),
         };
         let account_proof = AccountDeltaProof(
             incl.clone(),

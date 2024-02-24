@@ -1,5 +1,6 @@
-use std::collections::HashMap;
-
+// use std::collections::HashMap;
+use lru::LruCache;
+pub type HashMap<K, V> = LruCache<K, V>;
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_geyser_plugin_interface::geyser_plugin_interface::{
     ReplicaBlockInfo, ReplicaBlockInfoV2, ReplicaBlockInfoV3, ReplicaTransactionInfo, SlotStatus,
