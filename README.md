@@ -14,6 +14,9 @@ To understand more in-depth about how the plugin works you can read:
 - [Abstract](/docs/Sovereign-doc.md)
 - [Geyser](/docs/GEYSER.md)
 
+## Compatibility
+The plugin has been tested with solana validator `v1.18.7` on testnet and test-validator.
+
 ## Credits
 This work is based on the original repository [solana-proofs](https://github.com/Sovereign-Labs/solana-proofs) by [Sovereign Labs](https://www.sovereign.xyz/)
 - [Dubbelosix, Sovereign Labs](https://twitter.com/Dubbel06)
