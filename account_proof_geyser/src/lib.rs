@@ -73,9 +73,9 @@ fn handle_confirmed_slot(
     // Store SlotHash proofs for every Confirmed Slot
     // println!(
     //     "filtered_pubkeys_pre: {:?}",
-    account_hashes_data
-        .iter()
-        .for_each(|(k, v)| println!("filtered_pubkeys_pre: {:?}", k));
+    // account_hashes_data
+    // .iter()
+    // .for_each(|(k, v)| println!("filtered_pubkeys_pre: {:?}", k));
 
     // );
     let slothash_pubkey = Pubkey::from_str(&SLOT_HASH_ACCOUNT).unwrap();
@@ -108,12 +108,12 @@ fn handle_confirmed_slot(
         .iter()
         .map(|(k, (_, v, _))| (k.clone(), v.clone()))
         .collect();
-    println!("1");
+    // println!("1");
     // Calculate Account Delta Hash (Merkle Root) and Merkle proofs for pubkeys
     let (accounts_delta_hash, account_proofs) =
         calculate_root_and_proofs(&mut account_hashes, &pubkeys_for_proofs);
 
-    println!("2");
+    // println!("2");
     // Step 5: Calculate BankHash based on accounts_delta_hash and information extracted in Step 2
     let bank_hash = hashv(&[
         parent_bankhash.as_ref(),
@@ -121,7 +121,7 @@ fn handle_confirmed_slot(
         &num_sigs.to_le_bytes(),
         blockhash.as_ref(),
     ]);
-    println!("3");
+    // println!("3");
     // Step 6: build the account delta inclusion proof
     let proofs = assemble_account_delta_inclusion_proof(
         &mut account_hashes_data,
@@ -177,7 +177,7 @@ fn transfer_slot<V>(slot: u64, raw: &mut HashMap<u64, V>, processed: &mut HashMa
     }
 }
 
-async fn process_messages(
+fn process_messages(
     mut geyser_receiver: crossbeam::channel::Receiver<GeyserMessage>,
     tx: tokio::sync::broadcast::Sender<Update>,
     pubkeys_for_proofs: Vec<Pubkey>,
@@ -264,7 +264,8 @@ async fn process_messages(
             }
             // Handle Block updates
             Ok(GeyserMessage::BlockMessage(block)) => {
-                sleep(Duration::from_millis(1500));
+                // only for testing
+                // sleep(Duration::from_millis(1500));
                 if let Err(e) = handle_processed_slot(
                     block.slot,
                     &mut raw_slot_account_accumulator,
@@ -413,20 +414,20 @@ impl GeyserPlugin for Plugin {
         let mut tx_process_messages: tokio::sync::broadcast::Sender<Update> = tx.clone();
         thread::spawn(move || {
             let runtime = tokio::runtime::Runtime::new().unwrap();
-            runtime.block_on(async {
-                println!("reached here");
-                let mut i = 0;
-                // loop {
-                println!("process_messages iter {:?}", i);
-                process_messages(
-                    geyser_receiver.clone(),
-                    tx_process_messages.clone(),
-                    pubkeys_for_proofs.clone(),
-                )
-                .await;
-                // i += 1;
-                // }
-            });
+            // runtime.block_on(async {
+            println!("reached here");
+            // let mut i = 0;
+            // loop {
+            // println!("process_messages iter {:?}", i);
+            process_messages(
+                geyser_receiver.clone(),
+                tx_process_messages.clone(),
+                pubkeys_for_proofs.clone(),
+            )
+            // .await;
+            // i += 1;
+            // }
+            // });
         });
 
         thread::spawn(move || {

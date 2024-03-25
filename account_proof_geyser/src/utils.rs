@@ -83,16 +83,16 @@ pub fn generate_merkle_proofs(
         // Find the position of the key in the sorted pubkey_hash_vec
         let mut pos = pubkey_hash_vec
             .binary_search_by(|&(ref k, _)| {
-                println!("left: {:?}, right:{:?}", k, key);
+                // println!("left: {:?}, right:{:?}", k, key);
                 k.cmp(&key)
             })
             .unwrap();
-        println!("post: {:?}", pos);
+        // println!("post: {:?}", pos);
         let mut current_hashes: Vec<_> = pubkey_hash_vec
             .iter()
             .map(|&(_, ref h)| h.clone())
             .collect();
-        println!("current_hashes: {:?}", current_hashes);
+        // println!("current_hashes: {:?}", current_hashes);
         while current_hashes.len() > 1 {
             let chunk_index = pos / MERKLE_FANOUT;
             let index_in_chunk = pos % MERKLE_FANOUT;
@@ -101,7 +101,7 @@ pub fn generate_merkle_proofs(
 
             // Collect the hashes of the siblings for the current hash in this level.
             let mut sibling_hashes = Vec::with_capacity(MERKLE_FANOUT - 1);
-            println!("sibling_hashes: {:?}", sibling_hashes);
+            // println!("sibling_hashes: {:?}", sibling_hashes);
             for i in 0..MERKLE_FANOUT {
                 if i == index_in_chunk {
                     continue;
@@ -112,16 +112,16 @@ pub fn generate_merkle_proofs(
                 }
             }
             siblings.push(sibling_hashes);
-            println!("siblings: {:?}", siblings);
+            // println!("siblings: {:?}", siblings);
             // Move up one level in the tree.
             current_hashes = compute_hashes_at_next_level(&current_hashes);
-            println!("current_hashes: {:?}", current_hashes);
+            // println!("current_hashes: {:?}", current_hashes);
             pos = chunk_index;
         }
 
         proofs.push((key, Proof { path, siblings }));
     }
-    println!("proofs: {:?}", proofs);
+    // println!("proofs: {:?}", proofs);
 
     proofs
 }
