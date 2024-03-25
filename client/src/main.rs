@@ -27,9 +27,12 @@ use solana_sdk::sysvar::SysvarId;
 
 extern crate alloc;
 
-const DEFAULT_RPC_URL: &str = "http://api.testnet.solana.com:8899";
-const DEFAULT_WS_URL: &str = "ws://api.testnet.solana.com:8900";
+// const DEFAULT_RPC_URL: &str = "http://api.testnet.solana.com:8899";
+// const DEFAULT_WS_URL: &str = "ws://api.testnet.solana.com:8900";
+// const LOCAL: &str = "http://localhost:8899";
 
+const DEFAULT_RPC_URL: &str = "http://localhost:8899";
+const DEFAULT_WS_URL: &str = "ws://localhost:8900";
 pub struct CopyClient {
     pub rpc_url: String,
     pub ws_url: String,
@@ -114,7 +117,7 @@ enum Commands {
 }
 
 fn query_account(addr: &Pubkey) -> Account {
-    let url = "http://api.testnet.solana.com".to_string();
+    let url = DEFAULT_RPC_URL.to_string();
     let client = RpcClient::new(url);
     client.get_account(addr).unwrap()
 }
@@ -129,15 +132,23 @@ async fn monitor_and_verify_updates(
         .expect("unable to connect to 127.0.0.1 on port 5000");
     println!("got stream");
     let mut buffer = vec![0u8; 65536];
-    let n = stream
+    let mut n = stream
         .read(&mut buffer)
         .await
         .expect("unable to read to mutable buffer");
     println!("got object");
-    if n == 0 {
-        anyhow::bail!("Connection closed");
+    loop {
+        if n == 0 {
+            n = stream
+                .read(&mut buffer)
+                .await
+                .expect("unable to read to mutable buffer");
+            println!("got object {:?}", n);
+            // anyhow::bail!("Connection closed");
+        } else {
+            break;
+        }
     }
-
     let received_update: Update = BorshDeserialize::try_from_slice(&buffer[..n]).unwrap();
 
     let bankhash = received_update.root;
@@ -188,7 +199,10 @@ fn main() {
             rpc_url,
             ws_url,
         } => {
-            let account_for_proof = Pubkey::from_str(account_for_proof).unwrap();
+            let copy_program_pubkey = Pubkey::from_str(copy_program).unwrap();
+            let account_for_proof =
+                Pubkey::find_program_address(&[b"copy_hash"], &copy_program_pubkey).0;
+            println!("CopyPda: {:?}", account_for_proof.to_string());
             let signer_keypair = read_keypair_file(signer).unwrap();
             let account_state_from_rpc = query_account(&account_for_proof);
 
@@ -207,6 +221,7 @@ fn main() {
                 signer_keypair,
                 copy_program,
             );
+
             copy_client.send_transaction(&account_for_proof).unwrap();
             println!("sent txn");
             monitor_handle.join().unwrap();
