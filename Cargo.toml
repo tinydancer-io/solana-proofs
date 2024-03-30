@@ -1,7 +1,17 @@
 [workspace]
 members=["account_proof_geyser","client"]
 
+[workspace.dependencies]
+solana-rpc-client = {git="https://github.com/tinydancer-io/solana-1.18", branch="v1.18.7-branch", version="1.18.7"}
+solana-rpc-client-api = {git="https://github.com/tinydancer-io/solana-1.18", branch="v1.18.7-branch", version="1.18.7"}
+solana-transaction-status = {git="https://github.com/tinydancer-io/solana-1.18", branch="v1.18.7-branch"}
+solana-geyser-plugin-interface = { git = "https://github.com/tinydancer-io/solana-1.18", branch="v1.18.7-branch", version="1.18.7"}
+solana-accounts-db = { git = "https://github.com/tinydancer-io/solana-1.18", branch="v1.18.7-branch", version="1.18.7"}
+solana-sdk = { git = "https://github.com/tinydancer-io/solana-1.18", branch="v1.18.7-branch", version="1.18.7"}
+solana-runtime = { git = "https://github.com/tinydancer-io/solana-1.18", branch="v1.18.7-branch", version="1.18.7"}
+solana-logger = { git = "https://github.com/tinydancer-io/solana-1.18", branch="v1.18.7-branch", version="1.18.7"}
+
 [patch.crates-io]
-solana-program = { path = "/root/solana-1.18/sdk/program" } 
-solana-zk-token-sdk = { path = "/root/solana-1.18/zk-token-sdk" }
-solana-sdk = { path = "/root/solana-1.18/sdk"}
+solana-program = { git = "https://github.com/tinydancer-io/solana-1.18", branch="v1.18.7-branch", version="=1.18.7"} 
+solana-zk-token-sdk = { git = "https://github.com/tinydancer-io/solana-1.18" ,branch="v1.18.7-branch", version="1.18.7"}
+solana-sdk = { git = "https://github.com/tinydancer-io/solana-1.18", branch="v1.18.7-branch", version="1.18.7"}

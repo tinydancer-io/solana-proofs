@@ -6,17 +6,17 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anchor-lang = {path="/root/anchor/lang"}
-anchor-client = {path="/root/anchor/client"}
-solana-sdk = {path="/root/solana-1.18/sdk"}
+anchor-lang = {git = "https://github.com/tinydancer-io/anchor",branch="patch-dep"}
+anchor-client = {git = "https://github.com/tinydancer-io/anchor",branch="patch-dep"}
+solana-sdk = { workspace = true}
 borsh = {version = "1.2.1", features = ["derive"]}
 bs58 = "0.5.0"
 clap = {version="4.4.6", features = ['derive']}
 copy = {path = "../onchain_programs/programs/copy", features = ["no-entrypoint"]}
 
-solana-accounts-db = {path="/root/solana-1.18/accounts-db"}
-solana-runtime = {path="/root/solana-1.18/runtime"}
-solana-rpc-client = {path="/root/solana-1.18/rpc-client"}
+solana-runtime = {workspace = true}
+solana-accounts-db = {workspace = true}
+solana-rpc-client = {workspace = true}
 anyhow = "1.0.75"
 rand = "0.8.5"
 lru = "0.12.0"
@@ -30,9 +30,9 @@ crossbeam-channel = "0.5.8"
 backoff = { version = "0.4.0", features = ["tokio"] }
 tokio = { version = "1.32.0", features = ["rt-multi-thread", "macros", "time"] }
 log = { version = "0.4.14", features = ["std"] }
-account_proof_geyser = { path = "/root/solana-proofs/account_proof_geyser"}
+account_proof_geyser = { path = "../account_proof_geyser"}
 
-[patch.crates-io]
-solana-program = { path = "/root/solana-1.18/sdk/program" } 
-solana-zk-token-sdk = { path = "/root/solana-1.18/zk-token-sdk" }
-solana-sdk = { path = "/root/solana-1.18/sdk"}
+# [patch.crates-io]
+# solana-program = { path = "/root/solana-1.18/sdk/program" } 
+# solana-zk-token-sdk = { path = "/root/solana-1.18/zk-token-sdk" }
+# solana-sdk = { path = "/root/solana-1.18/sdk"}
