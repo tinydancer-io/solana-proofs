@@ -1,16 +1,16 @@
 [features]
 seeds = false
 skip-lint = false
-[programs.localnet]
+[programs.testnet]
 # blob_chunks = "5dEVwohfk3ciDudFS7mXi35ET2e5nrQMnuWbis1J5PJ7"
-copy = "BgaRwBpqNYbK8WSR4x1rtZn7LMhuwpHqF3nCoFtSjZjg"
+copy = "3R72AjaZj6gCbANm7LrjNwDqpxacxwnnqE7JgegBTY4Z"
 # solana_da_programs = "FYTJ57g8BhUwVK5Y3d2KbBeHHe1hLrA5NckBbENssK3U"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "http://localhost:8899"
+cluster = "http://api.testnet.solana.com"
 wallet = "/root/.config/solana/id.json"
 
 [scripts]

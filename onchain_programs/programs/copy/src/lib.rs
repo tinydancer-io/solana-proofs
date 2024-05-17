@@ -4,11 +4,17 @@ use anchor_lang::solana_program::keccak::{hashv, Hash};
 // declare_id!("97rYcJXAFPCGZCecRktMg9GueXsdgU55V8FsdxUiDZrc");
 
 //testnet program ID
-declare_id!("BgaRwBpqNYbK8WSR4x1rtZn7LMhuwpHqF3nCoFtSjZjg");
+declare_id!("3R72AjaZj6gCbANm7LrjNwDqpxacxwnnqE7JgegBTY4Z");
 
 pub const PREFIX: &str = "copy_hash";
 
-pub fn account_hasher(pubkey: &Pubkey, lamports: u64, data: &[u8], owner: &Pubkey, rent_epoch: u64) -> Hash {
+pub fn account_hasher(
+    pubkey: &Pubkey,
+    lamports: u64,
+    data: &[u8],
+    owner: &Pubkey,
+    rent_epoch: u64,
+) -> Hash {
     hashv(&[
         pubkey.as_ref(),
         &lamports.to_le_bytes(),
@@ -29,11 +35,13 @@ pub mod copy {
         let lamport_ref = acc.lamports.borrow();
         let data_ref = acc.data.borrow();
 
-        let account_hash = account_hasher(&acc.key,
-                                          **lamport_ref,
-                                          &data_ref,
-                                          acc.owner,
-                                          acc.rent_epoch);
+        let account_hash = account_hasher(
+            &acc.key,
+            **lamport_ref,
+            &data_ref,
+            acc.owner,
+            acc.rent_epoch,
+        );
 
         let ca = &mut ctx.accounts.copy_account;
         ca.accumulate_hash(&account_hash.to_bytes(), current_slot_num);

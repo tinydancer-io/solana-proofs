@@ -10,10 +10,10 @@ describe("copy", () => {
 
   it("Is initialized!", async () => {
     // Add your test here.
-    console.log(program.provider.wallet.publicKey)
+    console.log(program.provider.wallet.publicKey.toString())
     let [pda,bump] = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from("copy_hash")],program.programId)
     console.log(pda.toString())
-    return
+  
     const tx = await program.methods.copyHash(new anchor.BN(bump)).accounts({
       creator: program.provider.wallet.publicKey,
       sourceAccount: pda,
