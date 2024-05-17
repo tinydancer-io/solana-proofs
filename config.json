@@ -1,5 +1,5 @@
 {
     "libpath": "/root/solana-proofs/target/release/libaccount_proof_geyser.so",
     "bind_address": "127.0.0.1:5000",
-    "account_list": ["Bg3ZP9GymdRNSojqPs3BrDfwmjS3jXJUMu5jYZ6hR7kv"]
+    "account_list": ["HPUJAf6r3zJrkM72wB3EhGGtfbTkQwMPMSq6d7HaapYr"]
 }

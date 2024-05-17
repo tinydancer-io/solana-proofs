@@ -39,7 +39,7 @@ use crate::utils::{
 pub type HashMap<K, V> = LruCache<K, V>;
 
 pub const SLOT_HASH_ACCOUNT: &str = "SysvarS1otHashes111111111111111111111111111";
-pub const LRU_CACHE_CAP: usize = 100_000;
+pub const LRU_CACHE_CAP: usize = 100000;
 fn handle_confirmed_slot(
     slot: u64,
     block_accumulator: &mut HashMap<u64, BlockInfo>,
@@ -49,19 +49,16 @@ fn handle_confirmed_slot(
     pending_updates: &mut HashMap<Hash, Update>,
     pubkeys_for_proofs: &[Pubkey],
 ) -> anyhow::Result<Update> {
-    println!("HANDLE CONFIRMED SLOT");
+    info!("plugin_log:handle_confirmed_slot initiated");
     // Bail if required information is not present
     let Some(block) = block_accumulator.get_mut(&slot) else {
-        println!("BLOCK NOT AVAIL: {:?}",slot);
         anyhow::bail!("block not available: {:?}",slot);
     };
 
     let Some(num_sigs) = processed_transaction_accumulator.get_mut(&slot) else {
-        println!("txns NOT AVAIL");
         anyhow::bail!("list of txns not available");
     };
     let Some(mut account_hashes_data) = processed_slot_account_accumulator.get_mut(&slot) else {
-        println!("ACCOUNT HASHES NOT AVAILABLE SO FAR");
         anyhow::bail!("account hashes not available");
     };
 
@@ -71,13 +68,6 @@ fn handle_confirmed_slot(
         .cloned()
         .collect();
     // Store SlotHash proofs for every Confirmed Slot
-    // println!(
-    //     "filtered_pubkeys_pre: {:?}",
-    // account_hashes_data
-    // .iter()
-    // .for_each(|(k, v)| println!("filtered_pubkeys_pre: {:?}", k));
-
-    // );
     let slothash_pubkey = Pubkey::from_str(&SLOT_HASH_ACCOUNT).unwrap();
 
     let slothash_account_data = account_hashes_data
@@ -86,19 +76,13 @@ fn handle_confirmed_slot(
         .2
         .data
         .clone();
-    // let slothashes: SlotHashes = bincode::deserialize(&slothash_account_data).unwrap();
-    // filtered_pubkeys.push(slothash_pubkey);
 
-    // This doesn't need to exist because slothashes will always be part of the account_delta_hash
-    println!("filtered_pubkeys: {:?}", filtered_pubkeys);
     if filtered_pubkeys.len() == 0 {
         block_accumulator.pop(&slot);
         processed_slot_account_accumulator.pop(&slot);
         processed_transaction_accumulator.pop(&slot);
-        println!("MONITORIED NOT MODIFIED");
         anyhow::bail!("monitored account not modified for slot: {}", &slot);
     }
-    println!("ACCOUNT MODIFIED SO FAR");
 
     // Extract necessary information for calculating Bankhash
     let num_sigs = num_sigs.clone();
@@ -108,12 +92,10 @@ fn handle_confirmed_slot(
         .iter()
         .map(|(k, (_, v, _))| (k.clone(), v.clone()))
         .collect();
-    // println!("1");
     // Calculate Account Delta Hash (Merkle Root) and Merkle proofs for pubkeys
     let (accounts_delta_hash, account_proofs) =
         calculate_root_and_proofs(&mut account_hashes, &pubkeys_for_proofs);
 
-    // println!("2");
     // Step 5: Calculate BankHash based on accounts_delta_hash and information extracted in Step 2
     let bank_hash = hashv(&[
         parent_bankhash.as_ref(),
@@ -121,7 +103,6 @@ fn handle_confirmed_slot(
         &num_sigs.to_le_bytes(),
         blockhash.as_ref(),
     ]);
-    // println!("3");
     // Step 6: build the account delta inclusion proof
     let proofs = assemble_account_delta_inclusion_proof(
         &mut account_hashes_data,
@@ -129,7 +110,7 @@ fn handle_confirmed_slot(
         &pubkeys_for_proofs,
     )?;
 
-    println!("ACCOUNT DELTA PROOF BUILT");
+    info!("plugin_log:account_delta_proof construction successfull");
     // Step 7: Clean up data after proofs are generated
     block_accumulator.pop(&slot);
     processed_slot_account_accumulator.pop(&slot);
@@ -233,7 +214,7 @@ fn process_messages(
                     &acc.data,
                     acc.pubkey.as_ref(),
                 );
-
+                // println!("hash_solana_account: {:?}, {:?}", acc.pubkey, acc.slot);
                 // Overwrite an account if it already exists
                 // Overwrite an older version with a newer version of the account data (if account is modified multiple times in the same slot)
                 let write_version = acc.write_version;
@@ -265,7 +246,7 @@ fn process_messages(
             // Handle Block updates
             Ok(GeyserMessage::BlockMessage(block)) => {
                 // only for testing
-                // sleep(Duration::from_millis(1500));
+                // sleep(Duration::from_millis(500));
                 if let Err(e) = handle_processed_slot(
                     block.slot,
                     &mut raw_slot_account_accumulator,
@@ -275,12 +256,11 @@ fn process_messages(
                     &mut raw_vote_accumulator,
                     &mut processed_vote_accumulator,
                 ) {
-                    println!("SLOT MESSAGE PROCESS ERROR!");
+                    // println!("SLOT MESSAGE PROCESS ERROR!");
                     error!("Error when handling processed slot {}: {:?}", block.slot, e);
                 }
 
                 let slot = block.slot;
-                println!("WE DO GET BLOCK NOTIFS: {:?}", block.slot);
                 block_accumulator.push(
                     slot,
                     BlockInfo {
@@ -290,7 +270,6 @@ fn process_messages(
                         executed_transaction_count: block.executed_transaction_count,
                     },
                 );
-                println!("Pushed slot: {:?}", slot);
                 // handle a slot being confirmed
                 // use latest information in "processed" hashmaps and generate required proofs
                 // cleanup the processed hashmaps
@@ -313,7 +292,7 @@ fn process_messages(
                         }
                     }
                     Err(err) => {
-                        println!("handle_confirmed_slot_error! {:?}", err.to_string());
+                        // println!("handle_confirmed_slot_error! {:?}", err.to_string());
                         error!("{:?}", err);
                     }
                 }
@@ -342,7 +321,7 @@ fn process_messages(
                 //     }
                 // }
                 SlotStatus::Rooted => {
-                    println!("rooted slot: {:?}", slot_info.slot);
+                    // println!("rooted slot: {:?}", slot_info.slot);
                 }
                 _ => {}
             },
@@ -408,26 +387,17 @@ impl GeyserPlugin for Plugin {
             .iter()
             .map(|x| Pubkey::from_str(x).unwrap())
             .collect();
-        println!("Pubkey list: {:?}", pubkeys_for_proofs);
+        // println!("Pubkey list: {:?}", pubkeys_for_proofs);
         let (tx, _rx) = tokio::sync::broadcast::channel(LRU_CACHE_CAP);
 
         let mut tx_process_messages: tokio::sync::broadcast::Sender<Update> = tx.clone();
         thread::spawn(move || {
             let runtime = tokio::runtime::Runtime::new().unwrap();
-            // runtime.block_on(async {
-            println!("reached here");
-            // let mut i = 0;
-            // loop {
-            // println!("process_messages iter {:?}", i);
             process_messages(
                 geyser_receiver.clone(),
                 tx_process_messages.clone(),
                 pubkeys_for_proofs.clone(),
             )
-            // .await;
-            // i += 1;
-            // }
-            // });
         });
 
         thread::spawn(move || {
@@ -468,7 +438,7 @@ impl GeyserPlugin for Plugin {
 
     fn on_unload(&mut self) {
         if let Some(inner) = self.inner.take() {
-            println!("GEYSER SENDER DROPPED HERE!!!");
+            warn!("plugin_log:geyser_sender_dropped");
             drop(inner.geyser_sender);
         }
     }
